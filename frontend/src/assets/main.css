@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-color: #4F46E5;
+  --secondary-color: #7C3AED;
+  --background-color: #F9FAFB;
+  --text-color: #1F2937;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+/* Utilidades para Cuba */
+.data-saver * {
+  background-image: none !important;
+}
+
+.low-bandwidth img {
+  loading: lazy;
+}
+
+/* Animaciones suaves para dispositivos antiguos */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
