@@ -9,4 +9,7 @@ urlpatterns = [
     
     # Products endpoints
     path('', include('products.urls')),
+    
+    # Analytics endpoints (Fase 5 - WhatsApp Centric)
+    path('analytics/', include('analytics.urls')),
 ]

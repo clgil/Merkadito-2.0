@@ -1,75 +1,56 @@
 ```
-# Python
+# Python/Django specific
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
-venv/
-.venv/
-.ENV
-.venv.bak/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-.git/
-.mypy_cache/
-.pytest_cache/
-.hypothesis/
-
-# Django
-*.pot
-*.po
-MANIFEST
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Build and distribution artifacts
+*.py~
+*.pyc~
+*.pyo~
+*.pyd~
+*.egg-info/
 dist/
 build/
 *.egg
-*.egg-info/
-.eggs/
-.installed.cfg
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.manifest
-*.spec
+*.whl
+.coverage
+htmlcov/
+.coverage.*
 
-# Environment variables
+# Django migrations
+**/migrations/
+
+# Environment
 .env
 .env.local
+.env.*
 *.env
 *.env.*
 
-# IDE and editor files
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*.tmp
 
-# OS generated files
+# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
+
+# Dependencies
+.venv/
+venv/
+.env/
+node_modules/
+.mypy_cache/
+.pytest_cache/
+.coverage*
 ```
