@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Categoria, Provincia, Municipio, ConsejoPopular, Barrio, Empresa
+from .models import Categoria, Provincia, Municipio, ConsejoPopular, Barrio, Empresa, Plan, Suscripcion
 
 
 class CategoriaSerializer(serializers.ModelSerializer):
@@ -131,3 +131,36 @@ class EmpresaCreateUpdateSerializer(serializers.ModelSerializer):
         if len(numero_limpio) < 8:
             raise serializers.ValidationError('Número de WhatsApp inválido')
         return value
+
+
+class PlanSerializer(serializers.ModelSerializer):
+    """Serializer para planes de suscripción - FASE 7"""
+    class Meta:
+        model = Plan
+        fields = [
+            'id', 'nombre', 'slug', 'precio_mensual', 'moneda',
+            'max_productos', 'max_visitas_mes', 'estadisticas_avanzadas',
+            'soporte_prioritario', 'verificado', 'descripcion', 'activo'
+        ]
+
+
+class SuscripcionSerializer(serializers.ModelSerializer):
+    """Serializer para suscripciones - FASE 7"""
+    plan = PlanSerializer(read_only=True)
+    empresa_nombre = serializers.CharField(source='empresa.nombre', read_only=True)
+    esta_vencida = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = Suscripcion
+        fields = [
+            'id', 'empresa', 'empresa_nombre', 'plan',
+            'fecha_inicio', 'fecha_vencimiento', 'activa', 'cancelada',
+            'fecha_cancelacion', 'ultimo_pago', 'proximo_pago', 'esta_vencida'
+        ]
+
+
+class SuscripcionCreateSerializer(serializers.ModelSerializer):
+    """Para crear suscripciones - FASE 7"""
+    class Meta:
+        model = Suscripcion
+        fields = ['empresa', 'plan', 'fecha_vencimiento']

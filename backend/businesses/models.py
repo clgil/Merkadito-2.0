@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.text import slugify
+from django.contrib.auth.models import User
 
 
 class Categoria(models.Model):
@@ -147,3 +148,63 @@ class Empresa(models.Model):
         """Genera link directo a WhatsApp"""
         numero_limpio = self.whatsapp.replace('+', '').replace(' ', '').replace('-', '')
         return f'https://wa.me/{numero_limpio}'
+
+
+class Plan(models.Model):
+    """Planes de suscripción para negocios - FASE 7"""
+    nombre = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True, blank=True)
+    precio_mensual = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    moneda = models.CharField(max_length=3, default='CUP')
+    
+    # Características
+    max_productos = models.IntegerField(default=10, help_text='Número máximo de productos')
+    max_visitas_mes = models.IntegerField(default=1000, help_text='Visitas incluidas por mes')
+    estadisticas_avanzadas = models.BooleanField(default=False)
+    soporte_prioritario = models.BooleanField(default=False)
+    verificado = models.BooleanField(default=False)
+    
+    descripcion = models.TextField(max_length=500, blank=True)
+    activo = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['precio_mensual']
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.nombre)
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f'{self.nombre} - ${self.precio_mensual}/{self.moneda}'
+
+
+class Suscripcion(models.Model):
+    """Suscripción activa de un negocio - FASE 7"""
+    empresa = models.OneToOneField('businesses.Empresa', on_delete=models.CASCADE, related_name='suscripcion')
+    plan = models.ForeignKey(Plan, on_delete=models.PROTECT)
+    
+    fecha_inicio = models.DateTimeField(auto_now_add=True)
+    fecha_vencimiento = models.DateTimeField()
+    
+    activa = models.BooleanField(default=True)
+    cancelada = models.BooleanField(default=False)
+    fecha_cancelacion = models.DateTimeField(null=True, blank=True)
+    
+    # Historial de pagos (simplificado)
+    ultimo_pago = models.DateTimeField(null=True, blank=True)
+    proximo_pago = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-fecha_inicio']
+        indexes = [
+            models.Index(fields=['activa']),
+            models.Index(fields=['fecha_vencimiento']),
+        ]
+    
+    def __str__(self):
+        return f'{self.empresa.nombre} - {self.plan.nombre}'
+    
+    def esta_vencida(self):
+        from django.utils import timezone
+        return timezone.now() > self.fecha_vencimiento and not self.cancelada

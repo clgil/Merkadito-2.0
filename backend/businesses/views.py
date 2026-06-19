@@ -1,9 +1,12 @@
 from rest_framework import viewsets, filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
 from django.core.cache import cache
-from .models import Categoria, Provincia, Municipio, ConsejoPopular, Barrio, Empresa
+from django.utils import timezone
+from datetime import timedelta
+from .models import Categoria, Provincia, Municipio, ConsejoPopular, Barrio, Empresa, Plan, Suscripcion
 from .serializers import (
     CategoriaSerializer,
     ProvinciaSerializer,
@@ -12,7 +15,10 @@ from .serializers import (
     BarrioSerializer,
     EmpresaListSerializer,
     EmpresaDetailSerializer,
-    EmpresaCreateUpdateSerializer
+    EmpresaCreateUpdateSerializer,
+    PlanSerializer,
+    SuscripcionSerializer,
+    SuscripcionCreateSerializer
 )
 
 
@@ -137,6 +143,7 @@ class EmpresaViewSet(viewsets.ModelViewSet):
     search_fields = ['nombre', 'descripcion']
     ordering_fields = ['nombre', 'creado_en']
     lookup_field = 'slug'
+    permission_classes = [IsAuthenticatedOrReadOnly]
     
     def get_serializer_class(self):
         if self.action == 'list':
@@ -284,3 +291,81 @@ class EmpresaViewSet(viewsets.ModelViewSet):
             'ubicacion': {'lat': lat_float, 'lon': lon_float},
             'radio_km': radius_float
         })
+
+
+class PlanViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Planes de suscripción - FASE 7
+    
+    GET /api/v1/planes/ - Listar todos los planes disponibles
+    GET /api/v1/planes/{id}/ - Detalle de un plan
+    """
+    queryset = Plan.objects.filter(activo=True).order_by('precio_mensual')
+    serializer_class = PlanSerializer
+    permission_classes = [AllowAny]
+
+
+class SuscripcionViewSet(viewsets.ModelViewSet):
+    """
+    Gestión de suscripciones - FASE 7
+    
+    GET /api/v1/suscripciones/ - Listar suscripciones (auth requerida)
+    POST /api/v1/suscripciones/ - Crear suscripción (auth requerida)
+    GET /api/v1/suscripciones/{id}/ - Detalle (auth requerida)
+    PUT /api/v1/suscripciones/{id}/ - Actualizar (auth requerida)
+    DELETE /api/v1/suscripciones/{id}/ - Cancelar (auth requerida)
+    """
+    serializer_class = SuscripcionSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    
+    def get_queryset(self):
+        """Solo mostrar suscripciones del usuario autenticado"""
+        if self.request.user.is_authenticated:
+            return Suscripcion.objects.filter(
+                empresa__owner=self.request.user
+            ).select_related('plan', 'empresa')
+        return Suscripcion.objects.none()
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return SuscripcionCreateSerializer
+        return SuscripcionSerializer
+    
+    def perform_create(self, serializer):
+        """Crear suscripción con fecha de vencimiento automática"""
+        plan = serializer.validated_data['plan']
+        fecha_vencimiento = timezone.now() + timedelta(days=30)  # 1 mes por defecto
+        
+        serializer.save(
+            fecha_vencimiento=fecha_vencimiento,
+            activa=True
+        )
+    
+    @action(detail=True, methods=['post'])
+    def cancelar(self, request, pk=None):
+        """Cancelar suscripción - FASE 7"""
+        suscripcion = self.get_object()
+        suscripcion.cancelada = True
+        suscripcion.activa = False
+        suscripcion.fecha_cancelacion = timezone.now()
+        suscripcion.save()
+        
+        return Response({'status': 'suscripción cancelada'})
+    
+    @action(detail=True, methods=['post'])
+    def renovar(self, request, pk=None):
+        """Renovar suscripción - FASE 7"""
+        suscripcion = self.get_object()
+        
+        if suscripcion.esta_vencida():
+            return Response(
+                {'error': 'La suscripción está vencida. Contacta soporte.'},
+                status=400
+            )
+        
+        # Extender por 30 días desde la fecha actual
+        suscripcion.fecha_vencimiento = timezone.now() + timedelta(days=30)
+        suscripcion.ultimo_pago = timezone.now()
+        suscripcion.save()
+        
+        return Response({'status': 'suscripción renovada'})
